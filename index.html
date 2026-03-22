@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>理财通数据产品导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .header .date {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        /* Card */
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .card-icon.fund {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-icon.market {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .card-icon.marketing {
+            background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+        }
+
+        .card h2 {
+            font-size: 1.4rem;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a90d9;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .card-link::after {
+            content: '→';
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover .card-link::after {
+            transform: translateX(4px);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .footer p {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .footer .contact {
+            color: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .card {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>理财通数据产品导航</h1>
+            <p class="subtitle">一站式访问理财通数据看板与分析报告</p>
+            <p class="date" id="currentDate"></p>
+        </header>
+
+        <!-- Cards -->
+        <div class="cards-grid">
+            <!-- 基金行业资讯看板 -->
+            <a href="https://kelvinye2020-arch.github.io/fund-briefing/" target="_blank" class="card">
+                <div class="card-icon fund">📊</div>
+                <h2>基金行业资讯看板</h2>
+                <p>每日基金行业新闻动态、政策解读、市场热点追踪，自动更新推送。</p>
+                <span class="card-link">访问看板</span>
+            </a>
+
+            <!-- 全球指数看板 -->
+            <a href="https://kelvinye2020-arch.github.io/market-dashboard/" target="_blank" class="card">
+                <div class="card-icon market">🌍</div>
+                <h2>全球指数看板</h2>
+                <p>全球主要市场指数实时行情、涨跌幅对比、市场概览，把握全球投资脉搏。</p>
+                <span class="card-link">访问看板</span>
+            </a>
+
+            <!-- 小红书银行营销 -->
+            <a href="https://kelvinye2020-arch.github.io/bank-marketing-report/bank_marketing_report.html" target="_blank" class="card">
+                <div class="card-icon marketing">📱</div>
+                <h2>小红书银行营销活动</h2>
+                <p>银行在小红书平台的营销活动监测、内容分析报告，洞察社交媒体营销趋势。</p>
+                <span class="card-link">访问看板</span>
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>持续更新中 · 欢迎反馈建议</p>
+            <p class="contact">联系方式：kelvinyye</p>
+        </footer>
+    </div>
+
+    <script>
+        // 实时日期显示
+        function updateDate() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                weekday: 'long' 
+            };
+            const dateStr = now.toLocaleDateString('zh-CN', options);
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+        updateDate();
+    </script>
+</body>
+</html>
