@@ -50,8 +50,8 @@
         /* Cards Grid */
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
             margin-bottom: 60px;
         }
 
@@ -64,25 +64,6 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             text-decoration: none;
             display: block;
-            border: 2px solid transparent;
-        }
-
-        .card.featured {
-            border-color: #667eea;
-            position: relative;
-        }
-
-        .card.featured::before {
-            content: '推荐';
-            position: absolute;
-            top: -12px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
         }
 
         .card:hover {
@@ -163,6 +144,13 @@
         }
 
         /* Responsive */
+        @media (max-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8rem;
@@ -191,7 +179,7 @@
         <!-- Cards -->
         <div class="cards-grid">
             <!-- AMAC 基金数据看板 -->
-            <a href="https://kelvinye2020-arch.github.io/amac-fund-dashboard/" target="_blank" class="card featured">
+            <a href="https://kelvinyye2020-arch.github.io/amac-fund-dashboard/" target="_blank" class="card">
                 <div class="card-icon fund">📈</div>
                 <h2>AMAC 基金数据看板</h2>
                 <p>基于中国证券投资基金业协会数据的公募基金市场总览、销售机构排名、市场份额分析。</p>
