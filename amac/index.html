@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>基金行业数据看板 · 财务分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{
+    --bg-body:#0b0f14; --bg-surface:#10151c; --bg-card:#151c27; --bg-card-hover:#1a2433; --bg-elevated:#1e2a3a;
+    --border:#1c2a3d; --border-hover:#2a3d56;
+    --text-primary:#eef3f8; --text-secondary:#a8b8cc; --text-muted:#7b8da3; --text-label:#8b9db4;
+    --accent:#4a90f4; --up:#f0544c; --down:#2dd284;
+    --c-blue:#4a90f4; --c-orange:#f5a623; --c-green:#2dd284; --c-purple:#a78bfa; --c-red:#f0544c; --c-cyan:#22d3ee;
+    --sans:'Inter','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+    --mono:'JetBrains Mono','Inter',monospace;
+  
+    --teng:#f5a623; --teng-bg:rgba(245,166,35,0.15); --teng-border:rgba(245,166,35,0.5);}
+
+  
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--bg-body);color:var(--text-primary);font-size:15px;line-height:1.5;min-height:100vh}
+  .container{width:96%;max-width:1600px;margin:0 auto;padding:32px 24px}
+  
+  /* Header */
+  .header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .header-left h1{font-size:28px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+  .header-left .subtitle{color:var(--text-secondary);font-size:14px}
+  .header-left .meta{color:var(--text-muted);font-size:13px;margin-top:8px}
+  .header-left .meta a{color:var(--accent);text-decoration:none}
+  .header-left .meta a:hover{text-decoration:underline}
+  
+  /* 报告期 Tab 选择器 */
+  .period-selector{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+  .period-selector .label{font-size:13px;color:var(--text-label);font-weight:500}
+  .period-selector select{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+    font-family:var(--mono);font-size:14px;font-weight:600;padding:6px 28px 6px 12px;border-radius:6px;cursor:pointer;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23a8b8cc' d='M0 0l5 6 5-6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;
+    outline:none;transition:all 0.15s}
+  .period-selector select:hover{border-color:var(--border-hover);background-color:#1a2433}
+  .period-selector select:focus{border-color:var(--accent)}
+  
+  /* 时间窗切换 */
+  .window-tabs{display:flex;gap:4px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:3px}
+  .window-tabs button{background:transparent;border:none;color:var(--text-secondary);font-family:var(--sans);
+    font-size:12.5px;font-weight:500;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all 0.15s}
+  .window-tabs button:hover{color:var(--text-primary);background:rgba(255,255,255,0.04)}
+  .window-tabs button.active{background:var(--accent);color:#fff;font-weight:600}
+  
+  /* KPI 卡片 */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:all 0.2s}
+  .kpi-card:hover{background:var(--bg-card-hover);border-color:var(--border-hover);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+  .kpi-label{font-size:13px;color:var(--text-label);margin-bottom:8px;font-weight:500}
+  .kpi-value{font-size:32px;font-weight:700;font-family:var(--mono);color:var(--text-primary);line-height:1.1}
+  .kpi-unit{font-size:14px;color:var(--text-muted);margin-left:4px;font-weight:400}
+  .kpi-change{font-size:13px;margin-top:8px;font-family:var(--mono);font-weight:500}
+  .kpi-change.up{color:var(--up)} .kpi-change.down{color:var(--down)}
+  
+  /* 图表卡片 */
+  .chart-row{display:grid;gap:16px;margin-bottom:16px}
+  .chart-row.cols-2{grid-template-columns:1fr 1fr}
+  .chart-row.cols-1{grid-template-columns:1fr}
+  .chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all 0.2s}
+  .chart-card:hover{background:var(--bg-card-hover);border-color:var(--border-hover)}
+  .chart-card h3{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .chart-card .chart-desc{font-size:12px;color:var(--text-muted);margin-bottom:12px}
+  .chart-box{width:100%;height:340px}
+  .chart-box.tall{height:400px}
+  
+  /* 口径说明卡片（独立模块） */
+  .caliber-card{background:linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(74,144,244,0.05) 100%);
+    border:1px solid rgba(167,139,250,0.25);border-radius:12px;padding:20px 24px;margin-bottom:24px}
+  .caliber-card h3{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .caliber-card h3::before{content:'⚠';color:var(--c-purple);font-size:16px}
+  .caliber-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .caliber-block{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .caliber-block .title{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .caliber-block .title.new{color:var(--c-blue)}
+  .caliber-block .title.old{color:var(--c-purple)}
+  .caliber-block .period{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-left:auto}
+  .caliber-block ul{list-style:none;padding:0;margin:0}
+  .caliber-block li{font-size:12.5px;color:var(--text-secondary);padding:3px 0;line-height:1.6}
+  .caliber-block li strong{color:var(--text-primary);font-weight:500}
+  .caliber-block .note{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-size:11.5px;color:var(--text-muted);font-style:italic}
+  .caliber-impact{margin-top:14px;padding:12px 14px;background:rgba(240,84,76,0.06);border-left:3px solid var(--up);border-radius:4px;font-size:12.5px;color:var(--text-secondary);line-height:1.7}
+  .caliber-impact strong{color:var(--text-primary)}
+  
+  /* 数据表 */
+  .table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto}
+  .table-card h3{font-size:15px;font-weight:600;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:1100px}
+  th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{color:var(--text-label);font-weight:500;background:var(--bg-elevated);position:sticky;top:0}
+  th:first-child,td:first-child{text-align:left}
+  td{font-family:var(--mono);color:var(--text-secondary)}
+  td:first-child{font-family:var(--sans);color:var(--text-primary);font-weight:500}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+  td.dim{color:var(--text-muted)}
+  td.na{color:#4a5568;font-style:italic}
+  .badge-new{background:rgba(74,144,244,0.15);color:var(--c-blue);font-size:11px;padding:2px 6px;border-radius:4px;font-family:var(--sans);margin-left:6px;font-weight:500}
+  .badge-old{background:rgba(167,139,250,0.15);color:var(--c-purple);font-size:11px;padding:2px 6px;border-radius:4px;font-family:var(--sans);margin-left:6px;font-weight:500}
+  .badge-tag{background:rgba(74,144,244,0.12);color:var(--c-blue);font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--sans);font-weight:500;margin-left:8px}
+  
+  /* 表注 */
+  .table-note{margin-top:12px;padding:12px 14px;background:var(--bg-surface);border-left:3px solid var(--c-blue);border-radius:4px;font-size:12px;color:var(--text-muted);line-height:1.7}
+  .table-note .row{display:flex;gap:24px;flex-wrap:wrap}
+  .table-note strong{color:var(--text-secondary)}
+  
+  @media (max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .chart-row.cols-2{grid-template-columns:1fr}
+    .caliber-grid{grid-template-columns:1fr}
+    .header{flex-direction:column;align-items:flex-start}
+  }
+
+
+  
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--bg-body);color:var(--text-primary);font-size:15px;line-height:1.5;min-height:100vh}
+  .container{width:96%;max-width:1600px;margin:0 auto;padding:32px 24px}
+  
+  /* Demo警示条 */
+  .demo-banner{background:linear-gradient(90deg,rgba(245,166,35,0.15) 0%,rgba(245,166,35,0.05) 100%);
+    border:1px dashed rgba(245,166,35,0.5);border-radius:8px;padding:12px 16px;margin-bottom:20px;
+    font-size:13px;color:#fbbf24;display:flex;align-items:center;gap:8px}
+  .demo-banner strong{color:#fcd34d}
+  
+  /* Header */
+  .header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .header-left h1{font-size:28px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+  .header-left .subtitle{color:var(--text-secondary);font-size:14px}
+  .header-left .meta{color:var(--text-muted);font-size:13px;margin-top:8px}
+  .header-left .meta a{color:var(--accent);text-decoration:none}
+  
+  .period-selector{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+  .period-selector .label{font-size:13px;color:var(--text-label);font-weight:500}
+  .period-selector select{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+    font-family:var(--mono);font-size:14px;font-weight:600;padding:6px 28px 6px 12px;border-radius:6px;cursor:pointer;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23a8b8cc' d='M0 0l5 6 5-6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;outline:none;transition:all 0.15s}
+  .period-selector select:hover{border-color:var(--border-hover);background-color:#1a2433}
+  
+  /* 腾安专属KPI区 */
+  .teng-banner{background:linear-gradient(135deg,rgba(245,166,35,0.12) 0%,rgba(245,166,35,0.04) 100%);
+    border:1px solid var(--teng-border);border-radius:12px;padding:20px 24px;margin-bottom:20px;
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .teng-banner::before{content:'★';font-size:28px;color:var(--teng);font-weight:700}
+  .teng-banner .title{font-size:14px;color:var(--teng);font-weight:600;letter-spacing:0.5px}
+  .teng-banner .name{font-size:18px;font-weight:600;color:var(--text-primary);margin-top:2px}
+  .teng-banner .meta{color:var(--text-muted);font-size:12px;margin-top:4px}
+  .teng-banner .stats{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
+  .teng-stat{text-align:right}
+  .teng-stat .lab{font-size:12px;color:var(--text-muted);margin-bottom:2px}
+  .teng-stat .val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text-primary)}
+  .teng-stat .chg{font-family:var(--mono);font-size:11px;margin-top:2px}
+  .teng-stat .chg.up{color:var(--up)} .teng-stat .chg.down{color:var(--down)}
+  
+  /* KPI 卡片 */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:all 0.2s}
+  .kpi-card:hover{background:var(--bg-card-hover);border-color:var(--border-hover);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+  .kpi-label{font-size:13px;color:var(--text-label);margin-bottom:8px;font-weight:500}
+  .kpi-value{font-size:32px;font-weight:700;font-family:var(--mono);color:var(--text-primary);line-height:1.1}
+  .kpi-unit{font-size:14px;color:var(--text-muted);margin-left:4px;font-weight:400}
+  .kpi-change{font-size:13px;margin-top:8px;font-family:var(--mono);font-weight:500}
+  .kpi-change.up{color:var(--up)} .kpi-change.down{color:var(--down)}
+  
+  /* 图表卡片 */
+  .chart-row{display:grid;gap:16px;margin-bottom:16px}
+  .chart-row.cols-2{grid-template-columns:1fr 1fr}
+  .chart-row.cols-1{grid-template-columns:1fr}
+  .chart-row.cols-3{grid-template-columns:2fr 1fr}
+  .chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all 0.2s}
+  .chart-card:hover{background:var(--bg-card-hover);border-color:var(--border-hover)}
+  .chart-card h3{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .chart-card h3 .right{font-size:12px;color:var(--text-muted);font-weight:400}
+  .chart-card .chart-desc{font-size:12px;color:var(--text-muted);margin-bottom:12px}
+  .chart-box{width:100%;height:340px}
+  .chart-box.tall{height:520px}
+  .chart-box.short{height:280px}
+  
+  /* 字段Tab */
+  .field-tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--bg-surface);padding:4px;border-radius:8px;width:fit-content;border:1px solid var(--border)}
+  .field-tabs button{background:transparent;border:none;color:var(--text-muted);font-family:var(--sans);
+    font-size:12.5px;font-weight:500;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all 0.15s}
+  .field-tabs button:hover{color:var(--text-secondary)}
+  .field-tabs button.active{background:var(--accent);color:#fff}
+  
+  /* 类型图例 */
+  .type-legend{display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap}
+  .legend-item{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)}
+  .legend-item .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  
+  /* 排名变动榜 */
+  .rank-change-box{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-top:14px}
+  .rank-change-box .title{font-size:13px;color:var(--text-label);margin-bottom:10px;font-weight:500}
+  .rank-change-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rank-list{}
+  .rank-list .header{font-size:12px;font-weight:600;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+  .rank-list.up .header{color:var(--up)}
+  .rank-list.down .header{color:var(--down)}
+  .rank-list .row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;font-family:var(--mono);color:var(--text-secondary)}
+  .rank-list .row .name{font-family:var(--sans);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+  .rank-list .row.teng .name{color:var(--teng);font-weight:600}
+  .rank-list .row.teng .name::after{content:' ★';color:var(--teng)}
+  .rank-list .delta{font-weight:600}
+  .rank-list .delta.up{color:var(--up)}
+  .rank-list .delta.down{color:var(--down)}
+  
+  /* 数据表 */
+  .table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto}
+  .table-card h3{font-size:15px;font-weight:600;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{color:var(--text-label);font-weight:500;background:var(--bg-elevated);position:sticky;top:0}
+  th:nth-child(1),th:nth-child(2),th:nth-child(3){text-align:left}
+  td{font-family:var(--mono);color:var(--text-secondary)}
+  td:nth-child(1){font-family:var(--mono);font-weight:600;color:var(--text-muted)}
+  td:nth-child(2){font-family:var(--sans);color:var(--text-primary);font-weight:500}
+  td:nth-child(3){font-family:var(--sans);font-size:11px}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+  tr.teng td{background:var(--teng-bg)!important;color:var(--text-primary)}
+  tr.teng td:nth-child(2)::after{content:' ★';color:var(--teng);font-weight:700}
+  .cat-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+  .cat-银行{background:rgba(74,144,244,0.15);color:#60a5fa}
+  .cat-券商{background:rgba(167,139,250,0.15);color:#a78bfa}
+  .cat-独立销售{background:rgba(245,166,35,0.15);color:#f5a623}
+  .cat-保险{background:rgba(45,210,132,0.15);color:#2dd284}
+  
+  @media (max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .chart-row.cols-2,.chart-row.cols-3{grid-template-columns:1fr}
+    .teng-banner .stats{margin-left:0;width:100%}
+    .header{flex-direction:column;align-items:flex-start}
+  }
+
+
+/* === Shell 双层结构 === */
+/* 上层：全宽header（标题+全局报告期），不sticky */
+.app-header{background:linear-gradient(180deg,var(--bg-surface) 0%,var(--bg-body) 100%);
+  border-bottom:1px solid var(--border);padding:18px 0;position:relative}
+.app-header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(74,144,244,0.4),transparent)}
+.app-header-inner{width:96%;max-width:1600px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.app-logo{display:flex;align-items:center;gap:12px}
+.app-logo-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#4a90f4 0%,#22d3ee 100%);
+  display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(74,144,244,0.3)}
+.app-logo-text h1{font-size:18px;font-weight:600;color:var(--text-primary);line-height:1.2;margin:0;letter-spacing:-0.3px}
+.app-logo-text .sub{font-size:12px;color:var(--text-muted);margin-top:3px;font-weight:400;letter-spacing:0.2px}
+
+/* 下层：sticky tab栏（tabs + 已无报告期，全局期已在上层） */
+.app-nav{position:sticky;top:0;z-index:100;background:rgba(11,15,20,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:8px 0}
+.app-nav-inner{width:96%;max-width:1600px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;gap:6px}
+.app-tabs{display:flex;gap:4px}
+.app-tabs button{background:transparent;border:1px solid transparent;color:var(--text-muted);font-family:var(--sans);
+  font-size:14px;font-weight:500;padding:7px 18px;border-radius:20px;cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;white-space:nowrap}
+.app-tabs button:hover{color:var(--text-secondary);background:rgba(74,144,244,0.08);border-color:rgba(74,144,244,0.15)}
+.app-tabs button.active{color:#fff;background:rgba(74,144,244,0.18);border-color:rgba(74,144,244,0.35);box-shadow:0 0 8px rgba(74,144,244,0.15)}
+.app-tabs button .ico{font-size:14px}
+
+.app-period-global{display:flex;align-items:center;gap:10px}
+.app-period-global .label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:500}
+.app-period-global select{background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);
+  font-family:var(--mono);font-size:13px;font-weight:500;padding:5px 26px 5px 10px;border-radius:6px;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23a8b8cc' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat:no-repeat;background-position:right 9px center;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+.app-period-global select:hover{border-color:var(--border-hover)}
+.app-period-global select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(74,144,244,0.18)}
+
+/* 销售榜专属切换（顶栏） */
+.app-sls-period{display:flex;align-items:center;gap:8px;padding-right:14px;margin-right:4px;border-right:1px solid var(--border)}
+.app-sls-period .label{font-size:11px;color:var(--teng);text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
+.app-sls-period select{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.35);color:var(--text-primary);
+  font-family:var(--mono);font-size:13px;font-weight:600;padding:5px 26px 5px 10px;border-radius:6px;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23f5a623' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat:no-repeat;background-position:right 9px center;outline:none}
+.app-sls-period select:hover{border-color:rgba(245,166,35,0.6);background:rgba(245,166,35,0.12)}
+/* 下拉展开后的选项样式（修复白底白字看不清问题）*/
+.app-period-global select option,
+.app-sls-period select option,
+#sls_periodSelectTop option,
+#mkt_periodSelect option,
+#periodSelect option,
+select option{
+  background-color:#1a2433 !important;
+  color:#eef3f8 !important;
+  font-family:'JetBrains Mono','Inter',monospace;
+  padding:6px 10px;
+}
+select option:checked,
+select option:hover{
+  background-color:#2a3d56 !important;
+  color:#ffffff !important;
+}
+
+.tab-content{display:block}
+
+/* 模块 Banner - 轻量风格（理财通模式）*/
+.module-banner{display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:0 8px 8px 0;
+  background:linear-gradient(90deg,rgba(74,144,244,0.12) 0%,rgba(74,144,244,0.03) 60%,transparent 100%);
+  border-left:3px solid var(--accent);margin:0 0 20px;scroll-margin-top:64px}
+.module-banner.sales{background:linear-gradient(90deg,rgba(245,166,35,0.12) 0%,rgba(245,166,35,0.03) 60%,transparent 100%);
+  border-left-color:var(--teng)}
+.module-banner .ico-wrap{width:28px;height:28px;border-radius:6px;background:rgba(74,144,244,0.18);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.module-banner.sales .ico-wrap{background:rgba(245,166,35,0.18)}
+.module-banner .text-zh{font-size:17px;font-weight:700;color:var(--text-primary);letter-spacing:0.3px}
+.module-banner .text-en{font-family:var(--mono);font-size:11px;color:var(--text-muted);font-weight:400;
+  letter-spacing:0.8px;text-transform:uppercase;margin-left:6px}
+.module-banner .meta{margin-left:auto;font-size:12px;color:var(--text-muted)}
+
+/* Footer */
+.app-footer{margin-top:48px;padding:24px;border-top:1px solid var(--border);
+  text-align:center;font-size:12.5px;color:var(--text-muted);line-height:1.8}
+.app-footer a{color:var(--accent);text-decoration:none}
+.app-footer a:hover{text-decoration:underline}
+.app-footer .row1{margin-bottom:4px}
+.app-footer .row2{font-size:11.5px;color:var(--text-muted);opacity:0.8}
+
+.app-footer{margin-top:48px;padding:24px;text-align:center;font-size:12px;color:var(--text-muted);
+  border-top:1px solid var(--border);background:var(--bg-surface)}
+.app-footer a{color:var(--accent);text-decoration:none}
+
+/* 销售榜映射提示条 */
+.period-map-hint{background:linear-gradient(90deg,rgba(74,144,244,0.08) 0%,rgba(74,144,244,0.02) 100%);
+  border:1px solid rgba(74,144,244,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;
+  font-size:12.5px;color:var(--text-secondary);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.period-map-hint .accent{color:var(--accent);font-weight:600;font-family:var(--mono)}
+.period-map-hint .sls-select{margin-left:auto;display:flex;align-items:center;gap:8px}
+.period-map-hint .sls-select select{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+  font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 24px 4px 10px;border-radius:5px;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='%23a8b8cc' d='M0 0l4 5 4-5z'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;outline:none}
+
+@media (max-width:900px){
+  .app-header-inner{flex-direction:column;align-items:flex-start;gap:12px}
+  .app-nav{padding:8px 16px}
+  .app-nav-inner{flex-wrap:wrap;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部 Header（上层：标题，不sticky）-->
+<div class="app-header">
+  <div class="app-header-inner">
+    <div class="app-logo">
+      <div class="app-logo-icon">📊</div>
+      <div class="app-logo-text">
+        <h1>基金行业数据看板</h1>
+        <div class="sub">财务分析</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 模块导航（下层：tabs + 全局报告期，sticky）-->
+<nav class="app-nav">
+  <div class="app-nav-inner">
+    <div class="app-tabs" id="appTabs">
+      <button class="active" data-tab="market"><span class="ico">📈</span><span>公募市场总览</span></button>
+      <button data-tab="sales"><span class="ico">🏆</span><span>公募销售机构榜</span></button>
+    </div>
+    <div style="flex:1"></div>
+    <!-- 销售榜专属：手动切换半年期（仅销售榜活跃时显示）-->
+    <div class="app-sls-period" id="appSlsPeriod" style="display:none">
+      <span class="label">销售榜</span>
+      <select id="sls_periodSelectTop"></select>
+    </div>
+    <div class="app-period-global">
+      <span class="label">报告期</span>
+      <select id="globalPeriodSelect"></select>
+    </div>
+  </div>
+</nav>
+
+<!-- 市场总览 -->
+<div class="tab-content" id="tabMarket">
+  <div class="container">
+    <div class="module-banner" id="anchorMarket">
+      <div class="ico-wrap">📈</div>
+      <span class="text-zh">公募市场总览</span>
+      <span class="text-en">Public Fund Market Overview</span>
+      <span class="meta">公募基金资产净值 · 管理人 · 分类结构 · 月度跨6年</span>
+    </div>
+
+      <div class="period-selector">
+      <span class="label">时间窗</span>
+      <div class="window-tabs" id="mkt_windowTabs">
+        <button data-window="12" class="active">滚动12月</button>
+        <button data-window="6">近6月</button>
+        <button data-window="all">全部</button>
+      </div>
+      <select id="mkt_periodSelect" style="display:none"></select>
+    </div>
+  
+  <!-- KPI 摘要（响应报告期切换） -->
+  <div class="kpi-row" id="mkt_kpiRow"></div>
+  
+  <!-- 口径说明（独立模块） -->
+  <div class="caliber-card">
+    <h3>统计口径说明 · 2025年11月口径调整</h3>
+    <div class="caliber-grid">
+      <div class="caliber-block">
+        <div class="title old">老口径<span class="period">~ 2025-10</span></div>
+        <ul>
+          <li>· 一级分类：<strong>封闭式 / 开放式</strong></li>
+          <li>· 开放式下：<strong>股票 / 债券 / 货币 / 混合 / QDII</strong>（5类）</li>
+          <li>· QDII 单独分类</li>
+        </ul>
+        <div class="note">"股票/债券/货币/混合" 仅统计开放式</div>
+      </div>
+      <div class="caliber-block">
+        <div class="title new">新口径<span class="period">2025-11 起</span></div>
+        <ul>
+          <li>· 直接分 6 大类：<strong>股票 / 债券 / 货币 / 混合 / FOF / 其他</strong></li>
+          <li>· <strong>FOF（基金中基金）</strong>：2025-11 新增独立分类</li>
+          <li>· <strong>其他基金</strong>：2025-11 新增，<strong>QDII 归入其他</strong></li>
+        </ul>
+        <div class="note">不再区分封闭式 / 开放式</div>
+      </div>
+    </div>
+    <div class="caliber-impact">
+      <strong>对看板的影响：</strong><br>
+      · 总净值、基金总数、管理机构数等汇总指标全程一致，可跨口径连续展示；<br>
+      · 分类明细（股票/债券/货币/混合）在 2025-10 ↔ 2025-11 之间存在统计范围变更，部分非主流产品被划入 "其他基金" 或 "FOF"，<strong>不可直接做环比对比</strong>；<br>
+      · 看板已在 2025-11 时点加紫色虚线标记。
+    </div>
+  </div>
+  
+  <!-- 核心走势 -->
+  <div class="chart-row cols-1">
+    <div class="chart-card">
+      <h3>公募基金资产净值走势</h3>
+      <div class="chart-desc">单位：万亿元 · 跨口径连续指标（总额一致，不受分类口径变更影响）</div>
+      <div id="mkt_chartTotal" class="chart-box"></div>
+    </div>
+  </div>
+  
+  <div class="chart-row cols-2">
+    <div class="chart-card">
+      <h3>基金数量 / 管理机构数走势</h3>
+      <div class="chart-desc">基金总只数（左轴折线） vs 管理机构总数（右轴柱，0-200锁定刻度，避免1家变化被视觉放大）</div>
+      <div id="mkt_chartCount" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <h3>月度净值环比变化</h3>
+      <div class="chart-desc">单位：亿元 · 涨红跌绿</div>
+      <div id="mkt_chartChange" class="chart-box"></div>
+    </div>
+  </div>
+  
+  <!-- 分类结构（仅新口径） -->
+  <div class="chart-row cols-2">
+    <div class="chart-card">
+      <h3>各类基金净值规模 <span class="badge-tag">新口径 2025-11起</span></h3>
+      <div class="chart-desc">单位：万亿元 · 6 类基金分组堆叠</div>
+      <div id="mkt_chartCategoryStack" class="chart-box tall"></div>
+    </div>
+    <div class="chart-card">
+      <h3>当期基金结构占比 <span class="badge-tag">新口径</span></h3>
+      <div class="chart-desc"><span id="mkt_pieMonthLabel">最新月份</span> 各类基金净值占比</div>
+      <div id="mkt_chartPie" class="chart-box tall"></div>
+    </div>
+  </div>
+  
+  <!-- 数据表 -->
+  <div class="chart-row cols-1">
+    <div class="table-card">
+      <h3>历史数据明细</h3>
+      <div id="mkt_dataTable"></div>
+      <div class="table-note">
+        <div class="row">
+          <span><strong>列顺序</strong>：股票 / 债券 / 货币 / 混合（4列新旧口径对齐）→ FOF / 其他 / QDII（口径差异列）→ 封基（旧口径独有）</span>
+        </div>
+        <div style="margin-top:6px"><strong>单位</strong>：除环比保留亿元外，所有规模列统一为<strong>万亿(2位小数)</strong> · <strong>FOF</strong>：2025-11 新增 · <strong>其他</strong>：2025-11 新增（QDII 已归入） · <strong>封基</strong>：仅旧口径独立列出（约 3.7 万亿），新口径已合并到各投资类型中</div>
+        <div style="margin-top:6px"><strong>加法关系</strong>：旧口径 股+债+货+混+QDII+封基 = 总净值 ✓ · 新口径 股+债+货+混+FOF+其他 = 总净值 ✓</div>
+        <div style="margin-top:6px"><strong>新旧对比</strong>：股票/债券/货币/混合 4 类新旧口径定义基本一致可纵向参考，但严格意义不可直接环比（旧口径仅含开放式）</div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  </div>
+</div>
+
+<!-- 销售机构榜 -->
+<div class="tab-content" id="tabSales">
+  <div class="container">
+    <div class="module-banner sales" id="anchorSales">
+      <div class="ico-wrap">🏆</div>
+      <span class="text-zh">公募销售机构榜</span>
+      <span class="text-en">Public Fund Sales Top List</span>
+      <span class="meta">公募基金销售保有规模 · 腾安基金重点标注</span>
+    </div>
+    <div class="period-map-hint">
+      <span>当前报告期 <span class="accent" id="hintMktPeriod">—</span> 对应销售榜 <span class="accent" id="hintSlsPeriod">—</span></span>
+      <span style="color:var(--text-muted);font-size:11.5px">（销售榜按半年披露，协会通常在次半年的 1-3 月发布。如需查看其他半年期数据，可使用顶部"销售榜"切换。）</span>
+    </div>
+  
+  <!-- 腾安专属横幅 -->
+  <div class="teng-banner">
+    <div>
+      <div class="name">腾安基金销售（深圳）有限公司</div>
+    </div>
+    <div class="stats" id="sls_tengStats"></div>
+  </div>
+  
+  <!-- 口径说明卡片（销售榜专属） -->
+  <div class="caliber-card" style="margin-bottom:20px">
+    <h3>统计口径说明 · 2024年口径调整</h3>
+    <div class="caliber-grid">
+      <div class="caliber-block">
+        <div class="title old">老口径<span class="period">2021Q1 ~ 2023Q4</span></div>
+        <ul>
+          <li>· 字段：<strong>股票+混合公募基金保有规模</strong></li>
+          <li>· 含 <strong>股票基金 + 混合基金</strong></li>
+          <li>· 不含 FOF、被动指数等</li>
+        </ul>
+        <div class="note">按季度披露（Q1/Q2/Q3/Q4）</div>
+      </div>
+      <div class="caliber-block">
+        <div class="title new">新口径<span class="period">2024H1 起</span></div>
+        <ul>
+          <li>· 字段：<strong>权益基金保有规模</strong></li>
+          <li>· 含股票 + 混合 + <strong>股票型/偏股型 FOF</strong> + <strong>部分指数基金（含 ETF）</strong></li>
+          <li>· 新增 <strong>股票型指数基金</strong> 列</li>
+        </ul>
+        <div class="note">按半年披露（H1/H2）</div>
+      </div>
+    </div>
+    <div class="caliber-impact">
+      <strong>对看板的影响：</strong>由于"权益基金"统计范围更广（新增 FOF 与被动指数），<strong>新口径数值通常高于旧口径</strong>，时间序列不能直接做绝对值对比。
+      <br>看板已采取规避：①柱状走势图在 2024H1 时点加紫色虚线标记；②凹凸图与排名变动榜使用 <strong>排名维度</strong> 跨口径仍可比较；③字段名"权益基金"在老口径期自动显示为"股票+混合"。
+    </div>
+  </div>
+  
+  <!-- 行业KPI（4卡片） -->
+  <div class="kpi-row" id="sls_kpiRow"></div>
+  
+  <!-- TOP20 横向条形图 -->
+  <div class="chart-row cols-1">
+    <div class="chart-card">
+      <h3>
+        <span>TOP20 机构保有规模榜单</span>
+        <span class="right" id="sls_topRankHint"></span>
+      </h3>
+      <div class="chart-desc">单位：亿元 · 切换字段查看不同维度排名 · <span style="color:var(--teng)">★ 腾安基金高亮</span></div>
+      <!-- 类型图例 -->
+      <div class="type-legend">
+        <span class="legend-item"><span class="dot" style="background:#4a90f4"></span>银行</span>
+        <span class="legend-item"><span class="dot" style="background:#a78bfa"></span>券商</span>
+        <span class="legend-item"><span class="dot" style="background:#f5a623"></span>独立销售（含腾安★）</span>
+        <span class="legend-item"><span class="dot" style="background:#2dd284"></span>保险</span>
+      </div>
+      <div class="field-tabs" id="sls_topTabs">
+        <button class="active" data-field="equity">权益基金</button>
+        <button data-field="nonmoney">非货币市场</button>
+        <button data-field="index">股票型指数</button>
+      </div>
+      <div id="sls_chartTop20" class="chart-box tall"></div>
+    </div>
+  </div>
+  
+  <!-- 机构类型分布 + 腾安历史走势 -->
+  <div class="chart-row cols-3">
+    <div class="chart-card">
+      <h3>腾安基金历史走势 <span class="right" style="color:var(--teng)">★ 本公司</span></h3>
+      <div class="chart-desc">权益/非货/指数 三项规模 + 行业排名 4期变化</div>
+      <div id="sls_chartTengTrend" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <h3>TOP30 机构类型分布</h3>
+      <div class="chart-desc">按机构类型聚合权益规模</div>
+      <div id="sls_chartCategory" class="chart-box"></div>
+    </div>
+  </div>
+  
+  <!-- 头部竞争格局变迁 -->
+  <div class="chart-row cols-1">
+    <div class="chart-card">
+      <h3>
+        <span>头部机构 4 期排名变迁</span>
+        <span class="right">凹凸图 · Y轴为排名（#1在顶）· 看谁上升谁掉队</span>
+      </h3>
+      <div class="chart-desc">展示 4 期内出现过 TOP15 的机构 + 腾安 · <span style="color:var(--teng)">★ 腾安橙色加粗</span></div>
+      <div id="sls_chartTopTrend" class="chart-box tall"></div>
+      <div class="rank-change-box">
+        <div class="title">📊 4 期内排名变动榜</div>
+        <div class="rank-change-grid">
+          <div class="rank-list up">
+            <div class="header">▲ 排名上升 TOP3</div>
+            <div id="sls_rankUp"></div>
+          </div>
+          <div class="rank-list down">
+            <div class="header">▼ 排名下降 TOP3</div>
+            <div id="sls_rankDown"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 完整明细表 -->
+  <div class="chart-row cols-1">
+    <div class="table-card">
+      <h3 id="sls_tableTitle">完整明细榜单</h3>
+      <div id="sls_dataTable"></div>
+    </div>
+  </div>
+
+
+  </div>
+  </div>
+</div>
+
+<div class="app-footer">
+  数据来源于 <a href="https://www.amac.org.cn/" target="_blank">中国证券投资基金业协会</a> · 
+  <a href="https://www.amac.org.cn/sjtj/tjbg/gmjj/" target="_blank">公募市场月报</a> · 
+  <a href="https://www.amac.org.cn/sjtj/datastatistics/fundsalesindustrydata/" target="_blank">公募销售机构榜</a><br>
+  腾安基金销售（深圳）有限公司 · 财务分析 · 仅供内部研究使用
+</div>
+
+<script>
+// ============== 数据源URL ==============
+const MKT_DATA_URL = 'amac_fund_data.json';
+const SLS_DATA_URL = 'sales_dashboard_data.json';
+
+// ============== 市场总览模块（mkt_*）==============
+
+const MKT_COLORS = {
+  '股票基金':'#4a90f4',
+  '债券基金':'#f5a623',
+  '货币市场基金':'#2dd284',
+  '货币基金':'#2dd284',
+  '混合基金':'#a78bfa',
+  '基金中基金':'#f0544c',
+  '其他基金':'#22d3ee',
+  'QDII基金':'#fb923c',
+};
+const MKT_FONT_SANS = 'Inter, "Noto Sans SC", "PingFang SC", sans-serif';
+const MKT_FONT_MONO = 'JetBrains Mono, Inter, monospace';
+
+// 格式化：千分符整数
+function mktFmtInt(n){if(n==null||isNaN(n))return'-';return Math.round(Number(n)).toLocaleString('en-US')}
+// 格式化：万亿(2位小数)
+function mktFmtTrillion(yiyuan){if(yiyuan==null||isNaN(yiyuan))return'-';return (Number(yiyuan)/10000).toFixed(2)}
+// 格式化：2位小数（直接传万亿值）
+function mktFmt2(n){if(n==null||isNaN(n))return'-';return Number(n).toFixed(2)}
+// 格式化：带千分符的小数
+function mktFmtNum(n,d=2){if(n==null||isNaN(n))return'-';return Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+
+let MKT_DATA = [];
+let MKT_PERIOD = null;
+let MKT_WINDOW = 12; // 默认滚动12个月
+
+function mktInit(){
+fetch(MKT_DATA_URL).then(r=>r.json()).then(data=>{
+  data.sort((a,b)=>a.月份.localeCompare(b.月份));
+  MKT_DATA = data;
+  MKT_PERIOD = data[data.length-1].月份;
+  mktRenderHeader(data);
+  mktRenderPeriodSelector(data);
+  mktRenderWindowTabs();
+  mktRerenderAll();
+}).catch(e=>{
+  document.body.innerHTML='<div style="padding:40px;color:#f0544c">加载数据失败：'+e.message+'<br><br>请确保通过 HTTP 服务访问。</div>';
+});
+}
+
+// 根据报告期+窗口取子集（以报告期为终点向前滚动）
+function mktGetWindowData(){
+  const idx=MKT_DATA.findIndex(d=>d.月份===MKT_PERIOD);
+  const end=idx>=0?idx+1:MKT_DATA.length;
+  if(MKT_WINDOW==='all') return MKT_DATA.slice(0,end);
+  const start=Math.max(0, end-MKT_WINDOW);
+  return MKT_DATA.slice(start, end);
+}
+
+function mktRerenderAll(){
+  const sub=mktGetWindowData();
+  mktRenderKpi(MKT_DATA, MKT_PERIOD);
+  mktRenderTotal(sub);
+  mktRenderCount(sub);
+  mktRenderChange(sub);
+  mktRenderCategoryStack(sub);
+  mktRenderPie(MKT_DATA, MKT_PERIOD);
+  mktRenderTable(sub);
+}
+
+function mktRenderHeader(data){
+  const dr=document.getElementById('mkt_dateRange');
+  if(dr)dr.textContent=data[0].月份+' ~ '+data[data.length-1].月份;
+  const rc=document.getElementById('mkt_recordCount');
+  if(rc)rc.textContent=data.length;
+}
+
+function mktRenderPeriodSelector(data){
+  const sel=document.getElementById('mkt_periodSelect');
+  const months=[...data].reverse().map(d=>d.月份);
+  sel.innerHTML=months.map(m=>`<option value="${m}" ${m===MKT_PERIOD?'selected':''}>${m}</option>`).join('');
+  sel.addEventListener('change',e=>{
+    MKT_PERIOD=e.target.value;
+    mktRerenderAll();
+  });
+}
+
+function mktRenderWindowTabs(){
+  document.querySelectorAll('#windowTabs button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#windowTabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const w=btn.dataset.window;
+      MKT_WINDOW=w==='all'?'all':parseInt(w);
+      mktRerenderAll();
+    });
+  });
+}
+
+function mktRerenderForPeriod(){
+  mktRenderKpi(MKT_DATA, MKT_PERIOD);
+  mktRenderPie(MKT_DATA, MKT_PERIOD);
+}
+
+function mktRenderKpi(data, period){
+  const idx=data.findIndex(d=>d.月份===period);
+  const cur=data[idx];
+  const prev=idx>0?data[idx-1]:null;
+  
+  const totalChg=prev?(cur.总净值_万亿-prev.总净值_万亿):null;
+  const totalPct=prev?(totalChg/prev.总净值_万亿*100).toFixed(2):null;
+  const countChg=prev?(cur.全部.数量-prev.全部.数量):null;
+  
+  // 份额（亿份 → 万亿份）：用于区分规模增长来自资金申购还是净值上涨
+  const curShare=cur.全部 && cur.全部.份额_亿份 ? cur.全部.份额_亿份/10000 : null;
+  const prevShare=prev && prev.全部 && prev.全部.份额_亿份 ? prev.全部.份额_亿份/10000 : null;
+  const shareChg=(curShare!=null&&prevShare!=null)?(curShare-prevShare):null;
+  const sharePct=(shareChg!=null&&prevShare)?(shareChg/prevShare*100).toFixed(2):null;
+  
+  const kpis=[
+    {label:`公募总净值 · ${period}`,value:mktFmt2(cur.总净值_万亿),unit:'万亿元',
+     change:prev?`环比 ${totalChg>=0?'+':''}${mktFmt2(totalChg)} 万亿 (${totalPct}%)`:'首期数据',
+     up:totalChg!=null?totalChg>=0:null},
+    {label:`公募总份额 · ${period}`,value:curShare!=null?mktFmt2(curShare):'-',unit:curShare!=null?'万亿份':'',
+     change:curShare==null?'数据不可用':(prev&&shareChg!=null?
+       `环比 ${shareChg>=0?'+':''}${mktFmt2(shareChg)} 万亿份 (${sharePct}%)`
+       :'首期数据'),
+     up:shareChg!=null?shareChg>=0:null,
+     hint:'份额反映投资者持有份额变化，可与净值变化对照判断规模增长来自申购扩容还是净值上涨'},
+    {label:'基金总只数',value:mktFmtInt(cur.全部.数量),unit:'只',
+     change:prev?`环比 ${countChg>=0?'+':''}${mktFmtInt(countChg)} 只`:'首期数据',
+     up:countChg!=null?countChg>=0:null},
+    {label:'管理机构数',value:cur.管理机构总数,unit:'家',
+     change:`基金公司 ${cur.基金公司数} + 资管机构 ${cur.资管机构数}`,up:null},
+  ];
+  document.getElementById('mkt_kpiRow').innerHTML=kpis.map(k=>`
+    <div class="kpi-card" ${k.hint?`title="${k.hint}"`:''}>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}<span class="kpi-unit">${k.unit}</span></div>
+      ${k.change?`<div class="kpi-change ${k.up===null?'':(k.up?'up':'down')}">${k.change}</div>`:''}
+    </div>`).join('');
+}
+
+const mktCommonGrid={left:60,right:30,top:40,bottom:50};
+const mktCommonAxis={
+  axisLabel:{color:'#a8b8cc',fontFamily:MKT_FONT_MONO,fontSize:11},
+  axisLine:{lineStyle:{color:'#2a3d56'}},
+  splitLine:{lineStyle:{color:'#1c2a3d'}},
+};
+
+function mktRenderTotal(data){
+  const chart=echarts.init(document.getElementById('mkt_chartTotal'),'dark',{backgroundColor:'transparent'});
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:MKT_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:MKT_FONT_MONO},
+      formatter:p=>`<div style="font-family:${MKT_FONT_SANS}">${p[0].axisValue}</div><div style="font-family:${MKT_FONT_MONO};margin-top:4px"><span style="color:#4a90f4">●</span> 总净值 <strong style="color:#eef3f8;margin-left:8px">${mktFmt2(p[0].value)} 万亿元</strong></div>`},
+    grid:mktCommonGrid,
+    xAxis:{type:'category',data:data.map(d=>d.月份),...mktCommonAxis},
+    yAxis:{type:'value',name:'万亿元',nameTextStyle:{color:'#7b8da3',fontFamily:MKT_FONT_SANS},...mktCommonAxis,min:value=>Math.floor(value.min-1)},
+    series:[{
+      name:'总净值',type:'line',data:data.map(d=>d.总净值_万亿),smooth:true,symbolSize:7,
+      lineStyle:{color:'#4a90f4',width:2.5},itemStyle:{color:'#4a90f4'},
+      areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(74,144,244,0.35)'},{offset:1,color:'rgba(74,144,244,0)'}]}},
+      label:{show:true,position:'top',color:'#a8b8cc',fontFamily:MKT_FONT_MONO,fontSize:11,formatter:p=>mktFmt2(p.value)},
+      markLine:{symbol:'none',silent:true,lineStyle:{color:'#a78bfa',type:'dashed',width:1.5},
+        data:[{xAxis:'2025-11',label:{formatter:'口径调整',color:'#a78bfa',fontFamily:MKT_FONT_SANS,fontSize:11,position:'insideStartTop'}}]},
+    }]
+  });
+}
+
+function mktRenderCount(data){
+  const chart=echarts.init(document.getElementById('mkt_chartCount'),'dark',{backgroundColor:'transparent'});
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:MKT_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:MKT_FONT_MONO},
+      formatter:p=>{
+        let s=`<div style="font-family:${MKT_FONT_SANS}">${p[0].axisValue}</div>`;
+        p.forEach(x=>{
+          const unit=x.seriesName==='管理机构数'?'家':'只';
+          s+=`<div style="font-family:${MKT_FONT_MONO};margin-top:2px">${x.marker} ${x.seriesName} <strong style="color:#eef3f8;margin-left:8px">${mktFmtInt(x.value)} ${unit}</strong></div>`;
+        });
+        return s;
+      }},
+    legend:{data:['基金数量','管理机构数'],textStyle:{color:'#a8b8cc'},top:5},
+    grid:{...mktCommonGrid,top:50},
+    xAxis:{type:'category',data:data.map(d=>d.月份),...mktCommonAxis},
+    yAxis:[
+      {type:'value',name:'基金只数',nameTextStyle:{color:'#7b8da3'},...mktCommonAxis,min:value=>Math.floor(value.min*0.98),axisLabel:{...mktCommonAxis.axisLabel,formatter:v=>mktFmtInt(v)}},
+      {type:'value',name:'机构数',nameTextStyle:{color:'#7b8da3'},...mktCommonAxis,min:0,max:200,interval:50,axisLabel:{...mktCommonAxis.axisLabel,formatter:v=>mktFmtInt(v)}}
+    ],
+    series:[
+      {name:'管理机构数',type:'bar',data:data.map(d=>d.管理机构总数),yAxisIndex:1,
+       barWidth:'42%',z:1,itemStyle:{color:'rgba(167,139,250,0.20)',borderColor:'rgba(167,139,250,0.45)',borderWidth:1,borderRadius:[3,3,0,0]},
+       emphasis:{itemStyle:{color:'rgba(167,139,250,0.34)'}}},
+      {name:'基金数量',type:'line',data:data.map(d=>d.全部?.数量),smooth:true,yAxisIndex:0,z:3,
+       lineStyle:{color:'#f5a623',width:2.5},itemStyle:{color:'#f5a623'},symbolSize:6}
+    ]
+  });
+}
+
+function mktRenderChange(data){
+  const changes=data.slice(1).map((d,i)=>({
+    month:d.月份,
+    value:Math.round((d.总净值_万亿-data[i].总净值_万亿)*10000)
+  }));
+  const chart=echarts.init(document.getElementById('mkt_chartChange'),'dark',{backgroundColor:'transparent'});
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:MKT_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:MKT_FONT_MONO},
+      formatter:p=>{const v=p[0].value;return `<div style="font-family:${MKT_FONT_SANS}">${p[0].axisValue}</div><div style="font-family:${MKT_FONT_MONO};margin-top:4px">环比 <strong style="color:${v>=0?'#f0544c':'#2dd284'}">${v>=0?'+':''}${mktFmtInt(v)} 亿元</strong></div>`}},
+    grid:mktCommonGrid,
+    xAxis:{type:'category',data:changes.map(c=>c.month),...mktCommonAxis},
+    yAxis:{type:'value',name:'亿元',nameTextStyle:{color:'#7b8da3'},...mktCommonAxis,axisLabel:{...mktCommonAxis.axisLabel,formatter:v=>mktFmtInt(v)}},
+    series:[{
+      type:'bar',data:changes.map(c=>({value:c.value,itemStyle:{color:c.value>=0?'#f0544c':'#2dd284'}})),
+      barWidth:'55%',
+      label:{show:true,position:'top',color:'#a8b8cc',fontFamily:MKT_FONT_MONO,fontSize:10,formatter:p=>p.value>0?'+'+mktFmtInt(p.value):mktFmtInt(p.value)}
+    }]
+  });
+}
+
+function mktRenderCategoryStack(data){
+  // 仅新口径数据，单位转换为万亿
+  const newData=data.filter(d=>d.口径==='new');
+  const cats=['股票基金','债券基金','货币市场基金','混合基金','基金中基金','其他基金'];
+  const chart=echarts.init(document.getElementById('mkt_chartCategoryStack'),'dark',{backgroundColor:'transparent'});
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:MKT_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:MKT_FONT_MONO},
+      formatter:p=>{
+        let s=`<div style="font-family:${MKT_FONT_SANS}">${p[0].axisValue}</div>`;
+        let total=0;
+        p.forEach(x=>{
+          total+=Number(x.value)||0;
+          s+=`<div style="font-family:${MKT_FONT_MONO};margin-top:2px">${x.marker} ${x.seriesName} <strong style="color:#eef3f8;margin-left:8px">${mktFmt2(x.value)} 万亿</strong></div>`;
+        });
+        s+=`<div style="font-family:${MKT_FONT_MONO};margin-top:6px;padding-top:4px;border-top:1px solid #2a3d56">合计 <strong style="color:#eef3f8;margin-left:8px">${mktFmt2(total)} 万亿</strong></div>`;
+        return s;
+      }},
+    legend:{data:cats,textStyle:{color:'#a8b8cc',fontSize:11},top:5,type:'scroll'},
+    grid:{...mktCommonGrid,top:55,bottom:60},
+    xAxis:{type:'category',data:newData.map(d=>d.月份),...mktCommonAxis},
+    yAxis:{type:'value',name:'万亿元',nameTextStyle:{color:'#7b8da3'},...mktCommonAxis,axisLabel:{...mktCommonAxis.axisLabel,formatter:v=>mktFmt2(v)}},
+    series:cats.map(cat=>({
+      name:cat,type:'bar',stack:'total',
+      data:newData.map(d=>{const v=d[cat]?.净值_亿元;return v!=null?Number((v/10000).toFixed(2)):0}),
+      itemStyle:{color:MKT_COLORS[cat]},
+      emphasis:{focus:'series'}
+    }))
+  });
+}
+
+function mktRenderPie(data, period){
+  // 如果选中的是老口径月份，pie展示老口径
+  const cur=data.find(d=>d.月份===period);
+  if(!cur){return}
+  document.getElementById('mkt_pieMonthLabel').textContent=period;
+  let cats, title;
+  if(cur.口径==='new'){
+    cats=['股票基金','债券基金','货币市场基金','混合基金','基金中基金','其他基金'];
+  }else{
+    cats=['股票基金','债券基金','货币基金','混合基金','QDII基金'];
+  }
+  const pieData=cats.map(c=>({name:c,value:cur[c]?.净值_亿元||0,itemStyle:{color:MKT_COLORS[c]||'#9ca3af'}})).filter(d=>d.value>0);
+  const chart=echarts.init(document.getElementById('mkt_chartPie'),'dark',{backgroundColor:'transparent'});
+  chart.clear();
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:MKT_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'item',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:MKT_FONT_MONO},
+      formatter:p=>`<div style="font-family:${MKT_FONT_SANS}">${p.name}</div><div style="font-family:${MKT_FONT_MONO};margin-top:4px">${mktFmt2(p.value/10000)} 万亿 (${p.percent}%)</div>`},
+    legend:{orient:'vertical',right:10,top:'center',textStyle:{color:'#a8b8cc',fontSize:12},itemGap:10},
+    series:[{
+      type:'pie',radius:['45%','72%'],center:['38%','50%'],
+      data:pieData,
+      label:{color:'#eef3f8',fontFamily:MKT_FONT_SANS,fontSize:12,formatter:'{b}\n{d}%'},
+      labelLine:{lineStyle:{color:'#a8b8cc'}}
+    }]
+  });
+}
+
+function mktRenderTable(data){
+  const desc=[...data].reverse();
+  // 列顺序统一：股票 / 债券 / 货币 / 混合（前4列新旧口径完全对齐）/ FOF / 其他 / QDII
+  let html='<table><thead><tr>'+
+    '<th>月份</th>'+
+    '<th>总净值(万亿)</th>'+
+    '<th>环比(亿元)</th>'+
+    '<th>基金总数</th>'+
+    '<th>机构数</th>'+
+    '<th>股票(万亿)</th>'+
+    '<th>债券(万亿)</th>'+
+    '<th>货币(万亿)</th>'+
+    '<th>混合(万亿)</th>'+
+    '<th>FOF(万亿)</th>'+
+    '<th>其他(万亿)</th>'+
+    '<th>QDII(万亿)</th>'+
+    '<th title="封闭式基金：旧口径下独立列出，新口径已合并到各分类">封基(万亿)</th>'+
+    '</tr></thead><tbody>';
+  desc.forEach((d,i)=>{
+    const prev=desc[i+1];
+    const chg=prev?Math.round((d.总净值_万亿-prev.总净值_万亿)*10000):null;
+    const chgColor=chg==null?'':(chg>=0?'color:#f0544c':'color:#2dd284');
+    const isNew=d.口径==='new';
+    const huo=isNew?d.货币市场基金:d.货币基金;
+    const fof=isNew?d.基金中基金:null;
+    const other=isNew?d.其他基金:null;
+    const qdii=d.QDII基金;
+    const closed=d.封闭式基金;
+    
+    // FOF / 其他列：新口径给数值（万亿2位小数），旧口径 —
+    const fofCell=isNew?mktFmt2(fof?.净值_亿元/10000):'<span class="na">—</span>';
+    const otherCell=isNew?mktFmt2(other?.净值_亿元/10000):'<span class="na">—</span>';
+    // QDII列：旧口径给数值（万亿2位小数），新口径用 — 并 tooltip 提示（已归入其他）
+    const qdiiCell=isNew
+      ?'<span class="na" title="2025-11起QDII已归入其他基金，不再单独披露">—</span>'
+      :mktFmt2(qdii?.净值_亿元/10000);
+    // 封基列：仅旧口径披露
+    const closedCell=isNew
+      ?'<span class="na" title="2025-11起封闭式基金已合并到各投资类型分类中，不再独立披露">—</span>'
+      :mktFmt2(closed?.净值_亿元/10000);
+    
+    html+=`<tr>
+      <td>${d.月份}<span class="${isNew?'badge-new':'badge-old'}">${isNew?'新':'旧'}</span></td>
+      <td>${mktFmt2(d.总净值_万亿)}</td>
+      <td style="${chgColor}">${chg==null?'—':(chg>=0?'+':'')+mktFmtInt(chg)}</td>
+      <td>${mktFmtInt(d.全部?.数量)}</td>
+      <td>${d.管理机构总数}</td>
+      <td>${mktFmt2(d.股票基金?.净值_亿元/10000)}</td>
+      <td>${mktFmt2(d.债券基金?.净值_亿元/10000)}</td>
+      <td>${mktFmt2(huo?.净值_亿元/10000)}</td>
+      <td>${mktFmt2(d.混合基金?.净值_亿元/10000)}</td>
+      <td>${fofCell}</td>
+      <td>${otherCell}</td>
+      <td>${qdiiCell}</td>
+      <td>${closedCell}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('mkt_dataTable').innerHTML=html;
+}
+
+window.addEventListener('resize',()=>{
+  document.querySelectorAll('.chart-box').forEach(el=>{
+    const ins=echarts.getInstanceByDom(el);if(ins)ins.resize();
+  });
+});
+
+
+// ============== 销售榜模块（sls_*）==============
+
+const SLS_TENG = '腾安基金销售（深圳）有限公司';
+const SLS_CAT_COLORS = {'银行':'#4a90f4','券商':'#a78bfa','独立销售':'#f5a623','保险':'#2dd284'};
+const SLS_FONT_SANS = 'Inter, "Noto Sans SC", "PingFang SC", sans-serif';
+const SLS_FONT_MONO = 'JetBrains Mono, Inter, monospace';
+
+function slsFmtInt(n){if(n==null||isNaN(n))return'—';return Math.round(Number(n)).toLocaleString('en-US')}
+
+let SLS_DATA = {};
+let SLS_SCHEME = {};
+let SLS_PERIODS = [];
+let SLS_PERIOD = null;
+let SLS_FIELD = 'equity';
+const SLS_FIELD_NAMES = {equity:'权益基金',nonmoney:'非货币市场基金',index:'股票型指数基金'};
+const SLS_FIELD_NAMES_OLD = {equity:'股票+混合',nonmoney:'非货币市场基金',index:'股票型指数基金'};
+// 根据当前/指定期，返回字段显示名（老口径权益→"股票+混合"）
+function slsGetFieldName(field, period){
+  const p = period || SLS_PERIOD;
+  const isOld = p && !slsIsNewScheme(p);
+  return (isOld?SLS_FIELD_NAMES_OLD:SLS_FIELD_NAMES)[field];
+}
+function slsIsNewScheme(period){
+  // 新口径起点：2024H1（即 quarter=5 或 6）
+  if(!period) return true;
+  const y = parseInt(period.slice(0,4));
+  return y>=2024;
+}
+function slsUpdateCaliberHint(){
+  // 口径说明卡片已静态展示，无需额外动态提示
+}
+
+// 期内字段是否可用（老口径只有 equity/nonmoney，index 全为 null）
+function slsHasField(period, field){
+  if(field==='index'){
+    return SLS_SCHEME[period]==='new';
+  }
+  return true;
+}
+
+function slsInit(){
+fetch(SLS_DATA_URL).then(r=>r.json()).then(raw=>{
+  // 新格式: {period: {scheme, rows}}  -> 拍平为 {period: rows}
+  SLS_DATA = {};
+  SLS_SCHEME = {};
+  Object.keys(raw).forEach(p=>{
+    SLS_DATA[p] = raw[p].rows;
+    SLS_SCHEME[p] = raw[p].scheme;
+  });
+  SLS_PERIODS = Object.keys(SLS_DATA).sort().reverse(); // 最新在顶
+  SLS_PERIOD = SLS_PERIODS[0];
+  slsInitPeriodSelect();
+  slsInitFieldTabs();
+  slsRenderAll();
+}).catch(e=>{
+  document.body.innerHTML='<div style="padding:40px;color:#f0544c">加载失败：'+e.message+'</div>';
+});
+}
+
+function slsInitPeriodSelect(){
+  const sel=document.getElementById('sls_periodSelectTop');
+  sel.innerHTML=SLS_PERIODS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  sel.value=SLS_PERIOD;
+  sel.addEventListener('change',e=>{SLS_PERIOD=e.target.value;slsRenderAll()});
+}
+
+function slsInitFieldTabs(){
+  document.querySelectorAll('#sls_topTabs button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#sls_topTabs button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      SLS_FIELD=b.dataset.field;
+      slsRenderTop20();
+    });
+  });
+}
+
+function slsRenderAll(){
+  // 老口径期切到"股票型指数"Tab自动回退到权益
+  if(SLS_SCHEME[SLS_PERIOD] === 'old' && SLS_FIELD === 'index'){
+    SLS_FIELD = 'equity';
+    document.querySelectorAll('#sls_topTabs button').forEach(x=>{
+      x.classList.toggle('active', x.dataset.field==='equity');
+    });
+  }
+  // 老口径期禁用"股票型指数"Tab + 动态切换"权益基金"按钮文案
+  const isOldPeriod = SLS_SCHEME[SLS_PERIOD] === 'old';
+  document.querySelectorAll('#sls_topTabs button').forEach(b=>{
+    if(b.dataset.field === 'index'){
+      b.disabled = isOldPeriod;
+      b.style.opacity = isOldPeriod ? '0.35' : '';
+      b.style.cursor = isOldPeriod ? 'not-allowed' : 'pointer';
+      b.title = isOldPeriod ? `${SLS_PERIOD} 为旧口径期，未披露股票型指数基金保有规模（2024H1起才开始披露）` : '';
+    }
+    if(b.dataset.field === 'equity'){
+      b.textContent = isOldPeriod ? '股票+混合' : '权益基金';
+    }
+  });
+  // 更新口径切换提示条
+  slsUpdateCaliberHint();
+  slsRenderTengBanner();
+  slsRenderKpi();
+  slsRenderTop20();
+  slsRenderTengTrend();
+  slsRenderCategory();
+  slsRenderTopTrend();
+  slsRenderTable();
+}
+
+function slsGetRows(p){return SLS_DATA[p]||[]}
+function slsGetTeng(p){return slsGetRows(p).find(r=>r.name===SLS_TENG)}
+
+function slsRenderTengBanner(){
+  const cur=slsGetTeng(SLS_PERIOD);
+  const periodIdx=SLS_PERIODS.indexOf(SLS_PERIOD);
+  const prevPeriod=SLS_PERIODS[periodIdx+1]; // PERIODS降序，下一个index是上一期
+  const prev=prevPeriod?slsGetTeng(prevPeriod):null;
+  if(!cur){document.getElementById('sls_tengStats').innerHTML='<div style="color:var(--text-muted)">本期无数据</div>';return}
+  
+  const isOld = !slsIsNewScheme(SLS_PERIOD);
+  const eqLabel = isOld?'股票+混合（亿）':'权益基金（亿）';
+  const rankNote = isOld?'股票+混合规模':'权益规模';
+  const items=[
+    {lab:`行业排名 <span style="font-size:10px;color:var(--text-muted);font-weight:400">（按${rankNote}）</span>`,val:'#'+cur.rank,chg:prev?(prev.rank-cur.rank):null,chgFmt:v=>v>0?`↑ ${v}名`:(v<0?`↓ ${-v}名`:'持平'),isRank:true},
+    {lab:eqLabel,val:slsFmtInt(cur.equity),chg:prev?(cur.equity-prev.equity):null,chgFmt:v=>(v>=0?'+':'')+slsFmtInt(v)+'亿'},
+    {lab:'非货币（亿）',val:slsFmtInt(cur.nonmoney),chg:prev?(cur.nonmoney-prev.nonmoney):null,chgFmt:v=>(v>=0?'+':'')+slsFmtInt(v)+'亿'},
+    {lab:'股票型指数（亿）',val:cur.index!=null?slsFmtInt(cur.index):'—',
+      chg:(prev&&prev.index!=null&&cur.index!=null)?(cur.index-prev.index):null,chgFmt:v=>(v>=0?'+':'')+slsFmtInt(v)+'亿'},
+  ];
+  document.getElementById('sls_tengStats').innerHTML=items.map(it=>{
+    let chgHtml='';
+    if(it.chg!=null){
+      const up=it.isRank?it.chg>0:it.chg>=0;
+      chgHtml=`<div class="chg ${up?'up':'down'}">${it.chgFmt(it.chg)}</div>`;
+    }
+    return `<div class="teng-stat"><div class="lab">${it.lab}</div><div class="val">${it.val}</div>${chgHtml}</div>`;
+  }).join('');
+}
+
+function slsRenderKpi(){
+  const rows=slsGetRows(SLS_PERIOD);
+  const isNew=slsIsNewScheme(SLS_PERIOD);
+  
+  // 当期数据
+  const totalEq=rows.reduce((s,r)=>s+r.equity,0);
+  const totalNm=rows.reduce((s,r)=>s+r.nonmoney,0);
+  const totalIdx=rows.reduce((s,r)=>s+(r.index||0),0);
+  
+  // TOP10 集中度（按权益规模）
+  const sortedByEq=[...rows].sort((a,b)=>b.equity-a.equity);
+  const top10Eq=sortedByEq.slice(0,10).reduce((s,r)=>s+r.equity,0);
+  
+  // 第三方独立销售
+  const indSales=rows.filter(r=>r.category==='独立销售').reduce((s,r)=>s+r.equity,0);
+  const indCount=rows.filter(r=>r.category==='独立销售').length;
+  
+  // 当期指标（保留高精度计算，显示时才四舍五入）
+  const top10PctRaw = top10Eq/totalEq*100;
+  const indPctRaw = indSales/totalEq*100;
+  const passivePctRaw = isNew&&totalIdx>0 ? totalIdx/totalEq*100 : null;
+  const top10Pct = top10PctRaw.toFixed(1);
+  const indPct = indPctRaw.toFixed(1);
+  const passivePct = passivePctRaw!=null ? passivePctRaw.toFixed(1) : null;
+  
+  // 找环比（用 SLS_PERIODS 顺序的上一期）
+  const idx=SLS_PERIODS.indexOf(SLS_PERIOD);
+  const prevPeriod=idx<SLS_PERIODS.length-1?SLS_PERIODS[idx+1]:null;
+  let totalEqChg=null,top10PctChg=null,indPctChg=null,passivePctChg=null;
+  if(prevPeriod){
+    const prevRows=slsGetRows(prevPeriod);
+    if(prevRows.length){
+      const prevTotalEq=prevRows.reduce((s,r)=>s+r.equity,0);
+      const prevTotalIdx=prevRows.reduce((s,r)=>s+(r.index||0),0);
+      const prevSortedEq=[...prevRows].sort((a,b)=>b.equity-a.equity);
+      const prevTop10=prevSortedEq.slice(0,10).reduce((s,r)=>s+r.equity,0);
+      const prevInd=prevRows.filter(r=>r.category==='独立销售').reduce((s,r)=>s+r.equity,0);
+      
+      totalEqChg=((totalEq-prevTotalEq)/prevTotalEq*100).toFixed(1);
+      // 用原始百分比相减（避免toFixed后字符串相减丢精度）
+      top10PctChg=(top10PctRaw - prevTop10/prevTotalEq*100).toFixed(2);
+      indPctChg=(indPctRaw - prevInd/prevTotalEq*100).toFixed(2);
+      if(slsIsNewScheme(prevPeriod)&&prevTotalIdx>0&&passivePctRaw!=null){
+        passivePctChg=(passivePctRaw - prevTotalIdx/prevTotalEq*100).toFixed(2);
+      }
+    }
+  }
+  
+  function chgHtml(v,suffix='%',inverse=false){
+    if(v==null) return '<span style="color:var(--text-muted)">首期数据</span>';
+    let n=parseFloat(v);
+    if(Object.is(n,-0)) n=0; // 处理 -0
+    if(Math.abs(n)<0.005){
+      // 近似持平
+      return `<span style="color:var(--text-muted)">持平 (±${Math.abs(n).toFixed(2)}${suffix})</span>`;
+    }
+    const isUp=inverse?n<0:n>=0;
+    const color=isUp?'var(--up)':'var(--down)';
+    const sign=n>0?'+':'';
+    return `<span style="color:${color}">${sign}${v}${suffix}</span>`;
+  }
+  
+  const fieldLabel=isNew?'权益基金':'股票+混合';
+  const kpis=[
+    {
+      label:`全市场 ${rows.length} 家机构 · ${fieldLabel}规模`,
+      value:slsFmtInt(totalEq),
+      unit:'亿元',
+      sub:`${SLS_PERIOD} · 环比 ${chgHtml(totalEqChg)}`
+    },
+    {
+      label:'TOP10 集中度',
+      value:top10Pct,
+      unit:'%',
+      sub:`头部 10 家占比 · 环比 ${chgHtml(top10PctChg,'pp')}`,
+      hint:'反映行业头部化程度'
+    },
+    {
+      label:'第三方独立销售占比',
+      value:indPct,
+      unit:'%',
+      sub:`${indCount} 家独立销售占 ${fieldLabel} · 环比 ${chgHtml(indPctChg,'pp')}`,
+      hint:'蚂蚁/天天/腾安等互联网渠道占比'
+    },
+    {
+      label:'股票型指数被动化率',
+      value:passivePct||'—',
+      unit:passivePct?'%':'',
+      sub:passivePct?`指数基金 / ${fieldLabel} · 环比 ${chgHtml(passivePctChg,'pp')}`:'老口径未披露',
+      hint:'被动投资渗透率'
+    },
+  ];
+  document.getElementById('sls_kpiRow').innerHTML=kpis.map(k=>`
+    <div class="kpi-card" ${k.hint?`title="${k.hint}"`:''}>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}<span class="kpi-unit">${k.unit}</span></div>
+      <div class="kpi-change" style="color:var(--text-muted)">${k.sub}</div>
+    </div>`).join('');
+}
+
+// 改进版：直接重写 slsRenderTop20（最终版）
+function slsRenderTop20(){
+  const rows=[...slsGetRows(SLS_PERIOD)]
+    .filter(r=>r[SLS_FIELD]!=null)
+    .sort((a,b)=>(b[SLS_FIELD]||0)-(a[SLS_FIELD]||0))
+    .slice(0,20);
+  rows.forEach((r,i)=>{r._fieldRank=i+1});
+  
+  const tengRow=slsGetRows(SLS_PERIOD).find(r=>r.name===SLS_TENG);
+  let hint='';
+  if(tengRow){
+    const allRanked=[...slsGetRows(SLS_PERIOD)].filter(r=>r[SLS_FIELD]!=null).sort((a,b)=>(b[SLS_FIELD]||0)-(a[SLS_FIELD]||0));
+    const tengRank=allRanked.findIndex(r=>r.name===SLS_TENG)+1;
+    hint=`腾安 ${slsGetFieldName(SLS_FIELD)} 排名 #${tengRank} · 规模 ${slsFmtInt(tengRow[SLS_FIELD])} 亿`;
+  }
+  document.getElementById('sls_topRankHint').textContent=hint;
+  
+  const reversedRows=rows.slice().reverse();
+  const maxVal=Math.max(...rows.map(r=>r[SLS_FIELD]));
+  
+  const chart=echarts.init(document.getElementById('sls_chartTop20'),'dark',{backgroundColor:'transparent'});
+  chart.clear();
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:SLS_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:'#1e2a3a',borderColor:'#2a3d56',
+      textStyle:{color:'#eef3f8',fontFamily:SLS_FONT_MONO},
+      formatter:p=>{
+        // tooltip 只取第一个series 的数据
+        const first=p.find(x=>x.seriesIndex===0);
+        if(!first)return '';
+        const r=reversedRows[first.dataIndex];
+        return `<div style="font-family:${SLS_FONT_SANS}"><strong>#${r._fieldRank} ${r.name}</strong></div>
+        <div style="margin-top:4px;font-family:${SLS_FONT_MONO}">${slsGetFieldName(SLS_FIELD)}: <strong style="color:#eef3f8">${slsFmtInt(r[SLS_FIELD])} 亿</strong></div>
+        <div style="margin-top:2px;font-size:11px;color:#a8b8cc">类型: ${r.category}</div>`;
+      }},
+    grid:{left:180,right:100,top:20,bottom:30},
+    xAxis:{type:'value',max:maxVal*1.08,
+      axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO,formatter:v=>slsFmtInt(v)},
+      axisLine:{lineStyle:{color:'#2a3d56'}},splitLine:{lineStyle:{color:'#1c2a3d'}}},
+    yAxis:{type:'category',
+      data:reversedRows.map(r=>{
+        const n=r.name.length>13?r.name.slice(0,12)+'…':r.name;
+        return r.name===SLS_TENG?'{teng|'+n+'}':n;
+      }),
+      axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_SANS,fontSize:12,
+        rich:{teng:{color:'#f5a623',fontWeight:700,fontSize:12}}
+      },
+      axisLine:{lineStyle:{color:'#2a3d56'}},axisTick:{show:false}
+    },
+    series:[{
+      type:'bar',
+      data:reversedRows.map(r=>({
+        value:r[SLS_FIELD],
+        rank:r._fieldRank,
+        realName:r.name,
+        category:r.category,
+        itemStyle:{
+          color:r.name===SLS_TENG?'#f5a623':SLS_CAT_COLORS[r.category],
+          borderColor:r.name===SLS_TENG?'#fbbf24':'transparent',
+          borderWidth:r.name===SLS_TENG?2:0,
+          borderRadius:[0,4,4,0],
+        }
+      })),
+      barWidth:'62%',
+      // 双label: insideLeft显示排名, right显示数值
+      label:{
+        show:true,
+        position:'insideLeft',
+        formatter:p=>'#'+p.data.rank,
+        color:'#ffffff',
+        fontFamily:SLS_FONT_MONO,
+        fontSize:11,
+        fontWeight:700,
+        distance:6,
+      },
+    },{
+      // 透明叠加柱用于在右侧外显示规模数值
+      type:'bar',
+      data:reversedRows.map(r=>r[SLS_FIELD]),
+      barGap:'-100%',
+      barWidth:'62%',
+      itemStyle:{color:'rgba(0,0,0,0)',borderColor:'rgba(0,0,0,0)'},
+      label:{
+        show:true,
+        position:'right',
+        formatter:p=>slsFmtInt(p.value),
+        color:'#cbd5e1',
+        fontFamily:SLS_FONT_MONO,
+        fontSize:11,
+        fontWeight:500,
+      },
+      silent:true,
+      tooltip:{show:false},
+    }]
+  });
+}
+
+// 取最近4期（同频率：与当前期是季度则取4季，是半年则取4半年）按时间正序返回
+function slsGetRecent4Periods(curPeriod){
+  // SLS_PERIODS 是降序排列（最新在前）
+  const allAsc = SLS_PERIODS.slice().sort(); // 升序
+  if(!curPeriod) return allAsc.slice(-4);
+  const isHalf = /H[12]$/.test(curPeriod);
+  const sameType = allAsc.filter(p => isHalf ? /H[12]$/.test(p) : /Q[1-4]$/.test(p));
+  const idx = sameType.indexOf(curPeriod);
+  if(idx===-1) return sameType.slice(-4);
+  const start = Math.max(0, idx-3);
+  return sameType.slice(start, idx+1);
+}
+
+function slsRenderTengTrend(){
+  const periods4 = slsGetRecent4Periods(SLS_PERIOD);
+  const data=periods4.map(p=>{
+    const t=slsGetTeng(p);
+    return {period:p,equity:t?t.equity:null,nonmoney:t?t.nonmoney:null,index:t?t.index:null,rank:t?t.rank:null};
+  });
+  
+  const chart=echarts.init(document.getElementById('sls_chartTengTrend'),'dark',{backgroundColor:'transparent'});
+  chart.clear();
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:SLS_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:SLS_FONT_MONO}},
+    legend:{data:['权益/股混','非货币基金','股票型指数','行业排名'],textStyle:{color:'#a8b8cc',fontSize:11},top:5,type:'scroll'},
+    grid:{left:50,right:50,top:50,bottom:30},
+    xAxis:{type:'category',data:data.map(d=>d.period),
+      axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO},axisLine:{lineStyle:{color:'#2a3d56'}}},
+    yAxis:[
+      {type:'value',name:'规模(亿)',nameTextStyle:{color:'#7b8da3'},
+        axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO,formatter:v=>slsFmtInt(v)},
+        axisLine:{lineStyle:{color:'#2a3d56'}},splitLine:{lineStyle:{color:'#1c2a3d'}}},
+      {type:'value',name:'排名',nameTextStyle:{color:'#7b8da3'},inverse:true,min:1,max:20,
+        axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO,formatter:v=>'#'+v},
+        axisLine:{lineStyle:{color:'#2a3d56'}}}
+    ],
+    series:[
+      {name:'非货币基金',type:'bar',data:data.map(d=>d.nonmoney),itemStyle:{color:'#4a90f4'},barWidth:'28%',
+        markLine:{symbol:'none',silent:true,lineStyle:{color:'#a78bfa',type:'dashed',width:1.5},
+          data:[{xAxis:'2024H1',label:{formatter:'口径调整',color:'#a78bfa',fontFamily:SLS_FONT_SANS,fontSize:11,position:'insideStartTop'}}]}},
+      {name:'权益/股混',type:'bar',data:data.map(d=>d.equity),itemStyle:{color:'#f5a623'},barWidth:'28%'},
+      {name:'股票型指数',type:'bar',data:data.map(d=>d.index),itemStyle:{color:'#22d3ee'},barWidth:'28%'},
+      {name:'行业排名',type:'line',data:data.map(d=>d.rank),yAxisIndex:1,
+        lineStyle:{color:'#a78bfa',width:2.5,type:'dashed'},itemStyle:{color:'#a78bfa'},symbolSize:8,
+        label:{show:true,formatter:p=>'#'+p.value,color:'#a78bfa',fontFamily:SLS_FONT_MONO,fontSize:11,position:'top'}}
+    ]
+  });
+}
+
+function slsRenderCategory(){
+  const rows=slsGetRows(SLS_PERIOD);
+  const cats={};
+  rows.forEach(r=>{cats[r.category]=(cats[r.category]||0)+r.equity});
+  const data=Object.entries(cats).map(([k,v])=>({name:k,value:v,itemStyle:{color:SLS_CAT_COLORS[k]}}));
+  
+  const chart=echarts.init(document.getElementById('sls_chartCategory'),'dark',{backgroundColor:'transparent'});
+  chart.clear();
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:SLS_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'item',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',textStyle:{color:'#eef3f8',fontFamily:SLS_FONT_MONO},
+      formatter:p=>`<div style="font-family:${SLS_FONT_SANS}">${p.name}</div><div style="font-family:${SLS_FONT_MONO};margin-top:4px">${slsFmtInt(p.value)} 亿 (${p.percent}%)</div>`},
+    series:[{
+      type:'pie',radius:['45%','72%'],center:['50%','55%'],
+      data,
+      label:{color:'#eef3f8',fontFamily:SLS_FONT_SANS,fontSize:12,formatter:'{b}\n{d}%'},
+      labelLine:{lineStyle:{color:'#a8b8cc'}}
+    }]
+  });
+}
+
+function slsRenderTopTrend(){
+  // 凹凸图：展示最近 4 期内出现过 TOP15 的所有机构 + 腾安（与腾安走势图同频率）
+  const periods = slsGetRecent4Periods(SLS_PERIOD);
+  
+  // 收集 4 期内进过 TOP15 的所有机构
+  const candidates=new Set();
+  periods.forEach(p=>{
+    [...slsGetRows(p)].sort((a,b)=>b.equity-a.equity).slice(0,15).forEach(r=>candidates.add(r.name));
+  });
+  candidates.add(SLS_TENG);
+  const names=[...candidates];
+  
+  // 为每期计算排名（按权益规模）
+  const rankMap={}; // {period: {name: rank}}
+  periods.forEach(p=>{
+    const rows=[...slsGetRows(p)].sort((a,b)=>b.equity-a.equity);
+    rankMap[p]={};
+    rows.forEach((r,i)=>{rankMap[p][r.name]=i+1});
+  });
+  
+  // 取一组明显的颜色，腾安单独橙色
+  const palette=['#4a90f4','#22d3ee','#2dd284','#a78bfa','#f472b6','#ef4444','#fb923c','#facc15','#94a3b8','#60a5fa','#34d399','#c084fc','#fbbf24','#f87171','#a3e635','#06b6d4'];
+  
+  const series=names.map((name,i)=>{
+    const data=periods.map(p=>{
+      const r=rankMap[p][name];
+      return r&&r<=20?r:null; // 只显示 TOP20 以内
+    });
+    const isTeng=name===SLS_TENG;
+    return {
+      name:name.length>12?name.slice(0,11)+'…':name,
+      fullName:name,
+      type:'line',
+      data,
+      smooth:false,
+      connectNulls:false,
+      symbol:'circle',
+      symbolSize:isTeng?11:7,
+      lineStyle:{
+        color:isTeng?'#f5a623':palette[i%palette.length],
+        width:isTeng?3.5:2,
+        type:isTeng?'solid':'solid',
+        opacity:isTeng?1:0.55,
+      },
+      itemStyle:{
+        color:isTeng?'#f5a623':palette[i%palette.length],
+        borderColor:isTeng?'#fbbf24':'transparent',
+        borderWidth:isTeng?2:0,
+      },
+      label:{
+        show:true,
+        formatter:p=>'#'+p.value,
+        color:isTeng?'#fbbf24':'#a8b8cc',
+        fontFamily:SLS_FONT_MONO,fontSize:isTeng?12:10,
+        fontWeight:isTeng?700:400,
+        position:'top',
+      },
+      z:isTeng?100:1,
+      emphasis:{focus:'series',lineStyle:{width:isTeng?4:3}}
+    };
+  });
+  
+  const chart=echarts.init(document.getElementById('sls_chartTopTrend'),'dark',{backgroundColor:'transparent'});
+  chart.clear();
+  chart.setOption({
+    backgroundColor:'transparent',
+    textStyle:{fontFamily:SLS_FONT_SANS,color:'#a8b8cc'},
+    tooltip:{trigger:'axis',backgroundColor:'#1e2a3a',borderColor:'#2a3d56',
+      textStyle:{color:'#eef3f8',fontFamily:SLS_FONT_MONO},
+      formatter:p=>{
+        let s=`<div style="font-family:${SLS_FONT_SANS}"><strong>${p[0].axisValue}</strong></div>`;
+        const sorted=p.filter(x=>x.value!=null).sort((a,b)=>a.value-b.value);
+        sorted.forEach(x=>{
+          const isT=x.seriesName.includes('腾安');
+          s+=`<div style="margin-top:2px;font-family:${SLS_FONT_MONO};${isT?'color:#f5a623;font-weight:600':''}">${x.marker} #${x.value} ${x.seriesName}${isT?' ★':''}</div>`;
+        });
+        return s;
+      }},
+    legend:{type:'scroll',textStyle:{color:'#a8b8cc',fontSize:11},top:5,
+      formatter:n=>n.includes('腾安')?'★ '+n:n},
+    grid:{left:50,right:50,top:60,bottom:30},
+    xAxis:{type:'category',data:periods,
+      axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO,fontSize:12},
+      axisLine:{lineStyle:{color:'#2a3d56'}},
+      splitLine:{show:true,lineStyle:{color:'#1c2a3d'}}},
+    yAxis:{type:'value',name:'排名',nameTextStyle:{color:'#7b8da3'},
+      inverse:true,min:1,max:20,interval:2,
+      axisLabel:{color:'#a8b8cc',fontFamily:SLS_FONT_MONO,formatter:v=>'#'+v},
+      axisLine:{lineStyle:{color:'#2a3d56'}},splitLine:{lineStyle:{color:'#1c2a3d'}}},
+    series
+  });
+  
+  // 渲染排名变动榜
+  slsRenderRankChange(periods,rankMap);
+}
+
+function slsRenderRankChange(periods,rankMap){
+  const first=periods[0],last=periods[periods.length-1];
+  // 仅统计在首期和末期都有数据的机构
+  const moves=[];
+  Object.keys(rankMap[last]).forEach(name=>{
+    if(rankMap[first][name]==null||rankMap[last][name]==null)return;
+    const r0=rankMap[first][name],r1=rankMap[last][name];
+    // 仅保留任一期在 TOP30 的
+    if(r0>30&&r1>30)return;
+    moves.push({name,r0,r1,delta:r0-r1});
+  });
+  
+  // 上升 (delta>0)
+  const ups=[...moves].filter(m=>m.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,3);
+  // 下降 (delta<0)
+  const downs=[...moves].filter(m=>m.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,3);
+  
+  function renderList(arr,type){
+    if(!arr.length)return '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无</div>';
+    return arr.map(m=>{
+      const cls=m.name===SLS_TENG?'teng':'';
+      const deltaSign=m.delta>0?'+':'';
+      const arrow=m.delta>0?'↑':'↓';
+      return `<div class="row ${cls}">
+        <span class="name">${m.name}</span>
+        <span>#${m.r0} → #${m.r1} <span class="delta ${type}">${arrow}${Math.abs(m.delta)}名</span></span>
+      </div>`;
+    }).join('');
+  }
+  
+  document.getElementById('sls_rankUp').innerHTML=renderList(ups,'up');
+  document.getElementById('sls_rankDown').innerHTML=renderList(downs,'down');
+}
+
+function slsRenderTable(){
+  const rows=slsGetRows(SLS_PERIOD);
+  document.getElementById('sls_tableTitle').textContent=`${SLS_PERIOD} 完整明细榜单（TOP${rows.length}）`;
+  const isOld = !slsIsNewScheme(SLS_PERIOD);
+  const eqHead = isOld?'股票+混合(亿)':'权益基金(亿)';
+  const idxHead = isOld?'股票型指数(亿)<br><span style="font-size:10px;color:var(--text-muted);font-weight:400">未披露</span>':'股票型指数(亿)';
+  let html='<table><thead><tr><th>排名</th><th>机构名称</th><th>类型</th><th>'+eqHead+'</th><th>非货币(亿)</th><th>'+idxHead+'</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    const isTeng=r.name===SLS_TENG;
+    html+=`<tr class="${isTeng?'teng':''}">
+      <td>${r.rank}</td>
+      <td>${r.name}</td>
+      <td><span class="cat-tag cat-${r.category}">${r.category}</span></td>
+      <td>${slsFmtInt(r.equity)}</td>
+      <td>${slsFmtInt(r.nonmoney)}</td>
+      <td>${r.index!=null?slsFmtInt(r.index):'—'}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('sls_dataTable').innerHTML=html;
+}
+
+window.addEventListener('resize',()=>{
+  document.querySelectorAll('.chart-box').forEach(el=>{
+    const ins=echarts.getInstanceByDom(el);if(ins)ins.resize();
+  });
+});
+
+
+// ============== 全局 Shell 逻辑 ==============
+const APP = {
+  currentTab: 'market',
+  marketPeriod: null,  // YYYY-MM 月份
+};
+
+// 月份 -> 销售榜半年期
+function mapMonthToHalf(month){
+  if(!month) return null;
+  const [y,m] = month.split('-').map(Number);
+  // 销售榜披露规律：2024起按半年披露(H1在Q3/H2在次年Q1)，2021-2023按季度披露
+  // 智能映射：根据月份给出最可能已发布的最近一期
+  if(y >= 2025 || (y === 2024 && m >= 9)){
+    // 2024-09+：半年口径
+    if(m >= 9) return `${y}H1`;       // 2024-09 -> 2024H1, 2026-04 -> 2025H2 (走else)
+    if(m >= 3) return `${y-1}H2`;     // 2026-04 -> 2025H2
+    return `${y-1}H1`;
+  }
+  // 2024-08前：季度口径，季报延迟2个月发布
+  // 2024-08 -> 2024Q1 (Q2要等9月)；2024-05 -> 2023Q4
+  const possibleQ = Math.floor((m-1)/3) + 1;  // 当前所在季度
+  const q = possibleQ - 2;  // 延迟2季
+  if(q >= 1) return `${y}Q${q}`;
+  if(q === 0) return `${y-1}Q4`;
+  return `${y-1}Q${4+q}`; // q=-1 -> Q3
+}
+
+function updateSlsTopVisibility(tab){
+  const el = document.getElementById('appSlsPeriod');
+  if(el) el.style.display = (tab==='sales') ? 'flex' : 'none';
+}
+
+function initAppShell(){
+  // Tab 点击 → 平滑滚动到对应锚点
+  document.querySelectorAll('#appTabs button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const tab = btn.dataset.tab;
+      const anchorId = tab==='market'?'anchorMarket':'anchorSales';
+      const target = document.getElementById(anchorId);
+      if(target){
+        target.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      // 立即切换高亮（IntersectionObserver 也会更新，但点击需要即时反馈）
+      document.querySelectorAll('#appTabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      APP.currentTab = tab;
+      updateSlsTopVisibility(tab);
+    });
+  });
+  
+  // 滚动监听：自动高亮当前可见模块对应的 Tab
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const tab = entry.target.id === 'anchorMarket' ? 'market' : 'sales';
+        document.querySelectorAll('#appTabs button').forEach(b=>{
+          b.classList.toggle('active', b.dataset.tab===tab);
+        });
+        APP.currentTab = tab;
+        updateSlsTopVisibility(tab);
+      }
+    });
+  },{
+    rootMargin:'-56px 0px -60% 0px', // sticky nav 高度 ~56px
+    threshold:0
+  });
+  ['anchorMarket','anchorSales'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) observer.observe(el);
+  });
+  
+  // 全局报告期下拉
+  const globalSel = document.getElementById('globalPeriodSelect');
+  globalSel.addEventListener('change',e=>{
+    APP.marketPeriod = e.target.value;
+    // 同步给市场总览模块
+    MKT_PERIOD = APP.marketPeriod;
+    mktRerenderAll();
+    // 同步给销售榜（映射到半年期）
+    syncSalesPeriod();
+  });
+}
+
+function syncSalesPeriod(){
+  const mapped = mapMonthToHalf(APP.marketPeriod);
+  document.getElementById('hintMktPeriod').textContent = APP.marketPeriod || '—';
+  document.getElementById('hintSlsPeriod').textContent = mapped || '—';
+  
+  // 找到销售榜中实际存在的最接近期数
+  if(SLS_PERIODS && SLS_PERIODS.length){
+    // mapped 可能 SLS 没有，找小于等于 mapped 的最新一期
+    let target = SLS_PERIODS.find(p=>p<=mapped) || SLS_PERIODS[SLS_PERIODS.length-1];
+    if(target !== SLS_PERIOD){
+      SLS_PERIOD = target;
+      const slsSel = document.getElementById('sls_periodSelectTop');
+      if(slsSel) slsSel.value = target;
+      slsRenderAll();
+    }
+  }
+}
+
+// 初始化所有模块
+window.addEventListener('DOMContentLoaded',()=>{
+  initAppShell();
+  mktInit();
+  slsInit();
+});
+
+// 监听市场总览数据就绪 -> 填充全局下拉
+const _origMktRenderPeriodSelector = window.mktRenderPeriodSelector;
+// hack: 在 mktRerenderAll 第一次跑完后填充
+const _origMktRerenderAll = window.mktRerenderAll;
+
+// 用轮询确保数据就绪
+function waitForMktReady(){
+  if(MKT_DATA && MKT_DATA.length && MKT_PERIOD){
+    APP.marketPeriod = MKT_PERIOD;
+    // 填充全局下拉
+    const globalSel = document.getElementById('globalPeriodSelect');
+    const months = [...MKT_DATA].reverse().map(d=>d.月份);
+    globalSel.innerHTML = months.map(m=>`<option value="${m}" ${m===APP.marketPeriod?'selected':''}>${m}</option>`).join('');
+    // 同步销售榜映射
+    setTimeout(()=>syncSalesPeriod(), 200);
+  } else {
+    setTimeout(waitForMktReady, 100);
+  }
+}
+waitForMktReady();
+</script>
+</body>
+</html>
